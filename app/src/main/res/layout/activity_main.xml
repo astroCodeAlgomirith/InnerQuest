@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF0F0F1A"
+    android:padding="16dp">
+
+    <!-- Título -->
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="InnerQuest App"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:layout_centerHorizontal="true" />
+
+    <!-- Contenedor de LEDs (indicadores de programa) -->
+    <LinearLayout
+        android:id="@+id/ledContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/title"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <!-- LED Delta (Sueño) -->
+        <ImageView
+            android:id="@+id/ledDelta"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/led_off" />
+
+        <!-- LED Theta (Meditación) -->
+        <ImageView
+            android:id="@+id/ledTheta"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/led_off" />
+
+        <!-- LED Alpha (Relajación) -->
+        <ImageView
+            android:id="@+id/ledAlpha"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/led_off" />
+
+        <!-- LED Beta (Concentración) -->
+        <ImageView
+            android:id="@+id/ledBeta"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/led_off" />
+    </LinearLayout>
+
+    <!-- Selector de programas (Botones) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ledContainer"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="20dp">
+
+        <Button
+            android:id="@+id/btnDelta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Delta (Sueño)"
+            android:layout_margin="5dp" />
+
+        <Button
+            android:id="@+id/btnTheta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Theta (Meditación)"
+            android:layout_margin="5dp" />
+
+        <Button
+            android:id="@+id/btnAlpha"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Alpha (Relajación)"
+            android:layout_margin="5dp" />
+
+        <Button
+            android:id="@+id/btnBeta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Beta (Concentración)"
+            android:layout_margin="5dp" />
+    </LinearLayout>
+
+    <!-- Controles de volumen y frecuencia -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ledContainer"
+        android:layout_marginTop="150dp"
+        android:orientation="vertical">
+
+        <!-- Control de volumen (ruido blanco) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Volumen:"
+            android:textColor="#FFFFFF" />
+
+        <SeekBar
+            android:id="@+id/seekVolume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="50" />
+
+        <!-- Control de frecuencia/pitch -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Frecuencia (Hz):"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="20dp" />
+
+        <SeekBar
+            android:id="@+id/seekFrequency"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="30"
+            android:progress="10" />
+    </LinearLayout>
+
+</RelativeLayout>
