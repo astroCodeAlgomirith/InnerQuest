@@ -1,141 +1,375 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF0F0F1A"
-    android:padding="16dp">
+    android:background="#212121"
+    android:orientation="horizontal"
+    android:paddingLeft="10dp"
+    android:rotation="0"
+    tools:context=".MainActivity">
 
-    <!-- Título -->
+    <LinearLayout
+        android:id="@+id/left_button_column"
+        android:layout_width="91dp"
+        android:layout_height="642dp"
+        android:gravity="center|center_horizontal|center_vertical|fill_vertical"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.494">
+
+        <Button
+            android:id="@+id/btn_vol_up"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:rotation="90"
+            android:text="⬆" />
+
+        <Button
+            android:id="@+id/btn_vol_down"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="2dp"
+            android:rotation="90"
+            android:text="⬇" />
+
+        <Button
+            android:id="@+id/btn_wn_tone"
+            android:layout_width="80dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="90dp"
+            android:rotation="90"
+            android:text="WN TONE"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_change_noise"
+            android:layout_width="85dp"
+            android:layout_height="60dp"
+            android:rotation="90"
+            android:rotationY="0"
+            android:text="NOISE TYPE"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_pgm_sel"
+            android:layout_width="75dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:rotation="90"
+            android:text="PGM SEL"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_pse_run"
+            android:layout_width="75dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:rotation="90"
+            android:text="PSE RUN"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_pitch_up"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:rotation="90"
+            android:text="⬆" />
+
+        <Button
+            android:id="@+id/btn_pitch_down"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="8dp"
+            android:rotation="90"
+            android:text="⬇" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/led_column"
+        android:layout_width="76dp"
+        android:layout_height="252dp"
+        android:layout_marginEnd="124dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:rotationY="180"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.745"
+        app:layout_constraintStart_toEndOf="@+id/left_button_column"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
+        app:layout_constraintVertical_bias="0.108">
+
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:columnCount="2"
+            android:orientation="horizontal"
+            android:rowCount="7">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:rotation="90"
+                android:rotationY="-180"
+                android:text="1"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_1"
+                android:layout_marginBottom="8dp"
+                android:rotationX="0"
+                android:rotationY="0"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:rotation="90"
+                android:rotationY="-180"
+                android:text="2"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_2"
+                android:layout_marginBottom="8dp"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:rotation="90"
+                android:rotationY="-180"
+                android:text="3"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_3"
+                android:layout_marginBottom="8dp"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:rotation="90"
+                android:rotationY="-180"
+                android:text="4"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_4"
+                android:layout_marginBottom="8dp"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:rotation="90"
+                android:rotationY="-180"
+                android:text="5"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_5"
+                android:layout_marginBottom="8dp"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:rotation="90"
+                android:rotationY="-180"
+                android:text="6"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_6"
+                android:layout_marginBottom="16dp"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_marginEnd="8dp"
+                android:text="B"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_b"
+                android:layout_marginBottom="8dp"
+                android:src="@drawable/led_off" />
+
+            <TextView
+                android:layout_marginEnd="8dp"
+                android:text="R"
+                android:textColor="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/led_a"
+                android:layout_height="wrap_content"
+                android:src="@drawable/led_off" />
+        </GridLayout>
+    </LinearLayout>
+
     <TextView
-        android:id="@+id/title"
+        android:id="@+id/title_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="InnerQuest App"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        android:layout_centerHorizontal="true" />
+        android:rotation="90"
+        android:text="INNERQUEST®"
+        android:textColor="@android:color/white"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.951"
+        app:layout_constraintStart_toEndOf="@+id/led_column"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.525" />
 
-    <!-- Contenedor de LEDs (indicadores de programa) -->
-    <LinearLayout
-        android:id="@+id/ledContainer"
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/subtitle_text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/title"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="176dp"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:text="IQ 9110"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="@id/title_text"
+        app:layout_constraintHorizontal_bias="0.528"
+        app:layout_constraintStart_toStartOf="@id/title_text"
+        app:layout_constraintTop_toBottomOf="@id/title_text" />
 
-        <!-- LED Delta (Sueño) -->
-        <ImageView
-            android:id="@+id/ledDelta"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_margin="10dp"
-            android:src="@drawable/led_off" />
-
-        <!-- LED Theta (Meditación) -->
-        <ImageView
-            android:id="@+id/ledTheta"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_margin="10dp"
-            android:src="@drawable/led_off" />
-
-        <!-- LED Alpha (Relajación) -->
-        <ImageView
-            android:id="@+id/ledAlpha"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_margin="10dp"
-            android:src="@drawable/led_off" />
-
-        <!-- LED Beta (Concentración) -->
-        <ImageView
-            android:id="@+id/ledBeta"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_margin="10dp"
-            android:src="@drawable/led_off" />
-    </LinearLayout>
-
-    <!-- Selector de programas (Botones) -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/ledContainer"
+        android:id="@+id/linearLayout"
+        android:layout_width="230dp"
+        android:layout_height="80dp"
+        android:gravity="center_horizontal|center_vertical"
         android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="20dp">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.362"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.175">
 
-        <Button
-            android:id="@+id/btnDelta"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Delta (Sueño)"
-            android:layout_margin="5dp" />
-
-        <Button
-            android:id="@+id/btnTheta"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Theta (Meditación)"
-            android:layout_margin="5dp" />
-
-        <Button
-            android:id="@+id/btnAlpha"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Alpha (Relajación)"
-            android:layout_margin="5dp" />
-
-        <Button
-            android:id="@+id/btnBeta"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Beta (Concentración)"
-            android:layout_margin="5dp" />
-    </LinearLayout>
-
-    <!-- Controles de volumen y frecuencia -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/ledContainer"
-        android:layout_marginTop="150dp"
-        android:orientation="vertical">
-
-        <!-- Control de volumen (ruido blanco) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Volumen:"
-            android:textColor="#FFFFFF" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp"
+            android:rotation="90"
+            android:text="VOLUME"
+            android:textColor="@android:color/white" />
 
-        <SeekBar
-            android:id="@+id/seekVolume"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="100"
-            android:progress="50" />
+        <Button
+            android:id="@+id/btn_pwr"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:rotation="90"
+            android:text="⬆" />
 
-        <!-- Control de frecuencia/pitch -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Frecuencia (Hz):"
-            android:textColor="#FFFFFF"
-            android:layout_marginTop="20dp" />
+            android:layout_marginBottom="4dp"
+            android:rotation="90"
+            android:text="PWR"
+            android:textColor="@android:color/white" />
 
-        <SeekBar
-            android:id="@+id/seekFrequency"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:max="30"
-            android:progress="10" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:rotation="90"
+            android:text="EARS"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:rotation="90"
+            android:text="EYES"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:rotation="90"
+            android:text="EXT"
+            android:textColor="@android:color/white" />
+
     </LinearLayout>
 
-</RelativeLayout>
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="106dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="84dp"
+        android:layout_marginTop="56dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.141"
+        app:layout_constraintStart_toEndOf="@+id/left_button_column"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout">
+
+        <ImageView
+            android:id="@+id/led_ears_r"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/led_off" />
+
+        <TextView
+            android:layout_width="20dp"
+            android:layout_height="31dp"
+            android:layout_marginEnd="8dp"
+            android:rotation="90"
+            android:text="A"
+            android:textColor="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/led_eyes_l"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/led_off" />
+
+        <TextView
+            android:layout_width="23dp"
+            android:layout_height="31dp"
+            android:layout_marginEnd="8dp"
+            android:paddingStart="2dp"
+            android:rotation="90"
+            android:text="L"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="37dp"
+        android:layout_marginTop="424dp"
+        android:rotation="90"
+        android:text="PITCH"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.199"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+        app:layout_constraintVertical_bias="0.0" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
