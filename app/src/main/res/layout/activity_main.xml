@@ -7,6 +7,7 @@
     android:background="#212121"
     android:orientation="horizontal"
     android:paddingLeft="10dp"
+    android:paddingEnd="4dp"
     android:rotation="0"
     tools:context=".MainActivity">
 
@@ -92,18 +93,19 @@
 
     <LinearLayout
         android:id="@+id/led_column"
-        android:layout_width="76dp"
-        android:layout_height="252dp"
+        android:layout_width="71dp"
+        android:layout_height="216dp"
         android:layout_marginEnd="124dp"
+        android:layout_marginBottom="208dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:rotationY="180"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.745"
+        app:layout_constraintHorizontal_bias="0.765"
         app:layout_constraintStart_toEndOf="@+id/left_button_column"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
-        app:layout_constraintVertical_bias="0.108">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+        app:layout_constraintVertical_bias="0.681">
 
         <GridLayout
             android:layout_width="wrap_content"
@@ -199,25 +201,6 @@
                 android:layout_marginBottom="16dp"
                 android:src="@drawable/led_off" />
 
-            <TextView
-                android:layout_marginEnd="8dp"
-                android:text="B"
-                android:textColor="@android:color/white" />
-
-            <ImageView
-                android:id="@+id/led_b"
-                android:layout_marginBottom="8dp"
-                android:src="@drawable/led_off" />
-
-            <TextView
-                android:layout_marginEnd="8dp"
-                android:text="R"
-                android:textColor="@android:color/white" />
-
-            <ImageView
-                android:id="@+id/led_a"
-                android:layout_height="wrap_content"
-                android:src="@drawable/led_off" />
         </GridLayout>
     </LinearLayout>
 
@@ -232,24 +215,10 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.951"
+        app:layout_constraintHorizontal_bias="0.941"
         app:layout_constraintStart_toEndOf="@+id/led_column"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.525" />
-
-    <TextView
-        android:id="@+id/subtitle_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="176dp"
-        android:orientation="horizontal"
-        android:text="IQ 9110"
-        android:textColor="@android:color/white"
-        android:textSize="20sp"
-        app:layout_constraintEnd_toEndOf="@id/title_text"
-        app:layout_constraintHorizontal_bias="0.528"
-        app:layout_constraintStart_toStartOf="@id/title_text"
-        app:layout_constraintTop_toBottomOf="@id/title_text" />
+        app:layout_constraintVertical_bias="0.561" />
 
     <LinearLayout
         android:id="@+id/linearLayout"
@@ -320,12 +289,14 @@
         android:layout_width="106dp"
         android:layout_height="36dp"
         android:layout_marginStart="84dp"
-        android:layout_marginTop="56dp"
+        android:layout_marginTop="48dp"
         android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/led_column"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.141"
+        app:layout_constraintHorizontal_bias="0.091"
         app:layout_constraintStart_toEndOf="@+id/left_button_column"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+        app:layout_constraintVertical_bias="0.0">
 
         <ImageView
             android:id="@+id/led_ears_r"
@@ -358,6 +329,7 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="37dp"
         android:layout_marginTop="424dp"
@@ -370,6 +342,52 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout"
         app:layout_constraintVertical_bias="0.0" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout5"
+        android:layout_width="106dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="75dp"
+        android:layout_marginEnd="108dp"
+        android:layout_marginBottom="176dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/textView2">
+
+        <ImageView
+            android:id="@+id/led_b"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:src="@drawable/led_off" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:paddingStart="15dp"
+            android:rotation="90"
+            android:text="B"
+            android:textColor="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/led_a"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/led_off" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:paddingStart="12dp"
+            android:rotation="90"
+            android:text="R"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

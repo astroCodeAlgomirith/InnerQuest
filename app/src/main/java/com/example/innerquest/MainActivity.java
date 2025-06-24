@@ -7,6 +7,7 @@ import android.media.AudioTrack;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
@@ -35,11 +36,20 @@ public class MainActivity extends AppCompatActivity {
     private ImageView ledEarsR, ledEyesL, ledB, ledA;
     private List<ImageView> programLeds;
     private TextView programDisplayText; // Muestra el programa actual
+    // Recursos Drawable para los LEDs
+    private int ledOff;
+    private int ledRedOn;
+    private int ledOrangeOn;
+    private int ledGreenOn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Inicializar los recursos drawable
+        ledOff = R.drawable.led_off;
+        ledOrangeOn = R.drawable.led_orange_on;
+        ledGreenOn = R.drawable.led_green_on;
         setupUI();
         setupClickListeners();
     }
@@ -50,9 +60,9 @@ public class MainActivity extends AppCompatActivity {
         btnWnTone = findViewById(R.id.btn_wn_tone); // Boton para activar el ruido blanco
         btnChangeNoise = findViewById(R.id.btn_change_noise); // Boton para cambiar a ruido tipo surf
         ledEyesL = findViewById(R.id.led_eyes_l); //Led ojo Izquierdo
-        ledEarsR = findViewById(R.id.led_ears_r); //Led ojo derecho
-        ledB = findViewById(R.id.led_b); // Led progama A
-        ledA = findViewById(R.id.led_a); // Led programa B
+        ledEarsR = findViewById(R.id.led_ears_r); //Led programa A
+        ledB = findViewById(R.id.led_b); // Led progama B
+        ledA = findViewById(R.id.led_a); //Led ojo derecho
 
         //Tenemos programa A, B, AB, A0, A1, .... , B3, B4, B5, ....
         // Con nuestra secuencia B3, B4 Y B5 se deberia de ver prendido el led B y el led 3, asi con todos
@@ -85,33 +95,47 @@ public class MainActivity extends AppCompatActivity {
             stopAudioThread();
             currentProgram = Program.NONE;
             showToast("Dispositivo Apagado");
+            ledEarsR.setImageResource(ledOff);
+            ledB.setImageResource(ledOff);
+            for (ImageView led : programLeds) {
+                led.setImageResource(ledOff);
+            }
         }
-        updateAllLeds();
+
     }
 
     private void selectNextProgram() {
         if (!isPowerOn) return;
         switch (currentProgram) {
-            case NONE: currentProgram = Program.B3; break;
-            case B3: currentProgram = Program.B4; break;
-            case B4: currentProgram = Program.B5; break;
-            case B5: currentProgram = Program.NONE; break;
+            case NONE:
+                currentProgram = Program.B3;
+                break;
+            case B3:
+                currentProgram = Program.B4;
+                startAudioThread();
+                break;
+            case B4:
+                currentProgram = Program.B5;
+                startAudioThread();
+                break;
+            case B5:
+                currentProgram = Program.NONE;
+                startAudioThread();
+                break;
         }
         showToast("Programa Seleccionado: " + currentProgram.name());
-        updateAllLeds();
+        updateAllLeds(currentProgram);
     }
 
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
-
     private void toggleNoiseGeneration() {
         if (!isPowerOn) return;
         generateNoise = !generateNoise;
         showToast("Ruido " + (generateNoise ? "Activado" : "Desactivado"));
-        updateAllLeds();
-    }
 
+    }
     private void changeNoiseType() {
         if (!isPowerOn || !generateNoise) return;
         if (currentNoiseType == NoiseType.SOFT) {
@@ -122,13 +146,45 @@ public class MainActivity extends AppCompatActivity {
             showToast("Tipo de Ruido: Suave");
         }
     }
+    private void updateAllLeds(Program currentProgram) {
+        if (!isPowerOn) {
+            ledEarsR.setImageResource(ledOff);
+            ledB.setImageResource(ledOff);
+            for (ImageView led : programLeds) {
+                led.setImageResource(ledOff);
+            }
+            return;
+        }
 
-    private void updateAllLeds() {
-        // Aquí iría la lógica para encender y apagar los LEDs según el estado
-        // Por ejemplo, ledB podría indicar la energía, ledEarsA el ruido, etc.
+        for (ImageView led : programLeds) {
+            led.setImageResource(ledOff);
+        }
+        switch (currentProgram) {
+            case NONE:
+                ledEarsR.setImageResource(ledOff);
+                ledB.setImageResource(ledOff);
+                break;
+            case B3:
+                ledEarsR.setImageResource(ledOff);
+                ledB.setImageResource(ledGreenOn);
+                programLeds.get(2).setImageResource(ledOrangeOn);
+                break;
+            case B4:
+                ledEarsR.setImageResource(ledOff);
+                ledB.setImageResource(ledGreenOn);
+                programLeds.get(3).setImageResource(ledOrangeOn);
+                break;
+            case B5:
+                ledEarsR.setImageResource(ledOff);
+                ledB.setImageResource(ledGreenOn);
+                programLeds.get(4).setImageResource(ledOrangeOn);
+                break;
+            default:
+                ledEarsR.setImageResource(ledOff);
+                ledB.setImageResource(ledOff);
+                break;
+        }
     }
-
-
     private void startAudioThread() {
         if (isAudioPlaying) return;
         isAudioPlaying = true;
@@ -141,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         audioThread = new Thread(() -> {
-            // --- Variables para la generación de audio ---
+            // Variables para la generación de audio
             short[] buffer = new short[bufferSize];
             Random random = new Random();
             double phaseLeft = 0, phaseRight = 0, panPhase = 0;
@@ -233,6 +289,26 @@ public class MainActivity extends AppCompatActivity {
                 if (audioTrack != null) {
                     audioTrack.write(buffer, 0, buffer.length);
                 }
+                final double lastPanValue = Math.sin(panPhase);
+                runOnUiThread(() -> {
+                    // Solo actualiza los LEDs si el programa no es NONE
+                    if (currentProgram != Program.NONE) {
+                        if (lastPanValue < -0.2) { // Umbral para la izquierda
+                            ledEyesL.setImageResource(ledOrangeOn);
+                            ledA.setImageResource(ledOff);
+                        } else if (lastPanValue > 0.2) { // Umbral para la derecha
+                            ledEyesL.setImageResource(ledOff);
+                            ledA.setImageResource(ledOrangeOn);
+                        } else { // Cerca del centro
+                            ledEyesL.setImageResource(ledOff);
+                            ledA.setImageResource(ledOff);
+                        }
+                    } else {
+                        // Asegurarse de que estén apagados si no hay programa
+                        ledEyesL.setImageResource(ledOff);
+                        ledA.setImageResource(ledOff);
+                    }
+                });
             }
 
             // 4. LIMPIEZA
