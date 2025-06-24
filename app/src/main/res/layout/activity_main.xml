@@ -275,10 +275,11 @@
             android:textColor="@android:color/white" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="26dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:rotation="90"
+            android:textSize="14sp"
             android:text="EXT"
             android:textColor="@android:color/white" />
 
