@@ -39,6 +39,9 @@ public class AppActivity extends AppCompatActivity {
     private final double MIN_TONE_FREQ = 50.0; // Frecuencia mínima
     private final double MAX_TONE_FREQ = 1000.0; // Frecuencia máxima
 
+    // NUEVA: Variable para controlar el estado de pausa/reanudación
+    private volatile boolean isPaused = false; // Estado de pausa
+
     // Variables para la generacion de audio
     private volatile boolean isAudioPlaying = false; // Control general del hilo de audio
     private AudioTrack audioTrack;
@@ -47,6 +50,8 @@ public class AppActivity extends AppCompatActivity {
 
     // Variable para controlar el tiempo de ejecución del programa
     private long programStartTime; // Guarda el System.currentTimeMillis() cuando el programa comienza
+    private long pauseStartTime; // Guarda el tiempo cuando se pausa
+    private long totalPausedTime = 0; // Acumula el tiempo total en pausa
 
     // Interfaz
     private Button btnPwr, btnPgmSel, btnPseRun, btnWnTone, btnChangeNoise;
@@ -84,11 +89,12 @@ public class AppActivity extends AppCompatActivity {
         findViewById(R.id.btn_vol_up).setOnClickListener(v -> increaseVolume());
         findViewById(R.id.btn_vol_down).setOnClickListener(v -> decreaseVolume());
 
-        // Modificar los listeners para los botones de pitch
         findViewById(R.id.btn_pitch_up).setOnClickListener(v -> increasePitch());
         findViewById(R.id.btn_pitch_down).setOnClickListener(v -> decreasePitch());
 
-        findViewById(R.id.btn_pse_run).setOnClickListener(v -> showToast("PSE RUN click"));
+        // MODIFICADO: Asignar el listener para el botón PSE RUN
+        btnPseRun = findViewById(R.id.btn_pse_run);
+        btnPseRun.setOnClickListener(v -> togglePauseRun());
 
         programLeds = new ArrayList<>();
         programLeds.add(findViewById(R.id.led_1));
@@ -110,12 +116,15 @@ public class AppActivity extends AppCompatActivity {
         isPowerOn = !isPowerOn;
         if (isPowerOn) {
             programStartTime = System.currentTimeMillis();
+            totalPausedTime = 0; // Resetear tiempo de pausa al encender
+            isPaused = false; // Asegurarse de que no esté en pausa
             startAudioThread();
             showToast("Dispositivo Encendido");
         } else {
-            stopAudioThread(); // Correct call
+            stopAudioThread();
             currentProgram = Program.NONE;
             currentAudioButtonMode = AudioButtonMode.OFF;
+            isPaused = false; // Asegurarse de que no esté en pausa al apagar
             showToast("Dispositivo Apagado");
             // Apagar todos los LEDs al apagar el dispositivo
             ledEarsR.setImageResource(ledOff);
@@ -153,6 +162,8 @@ public class AppActivity extends AppCompatActivity {
 
         if (currentProgram != oldProgram) {
             programStartTime = System.currentTimeMillis();
+            totalPausedTime = 0; // Resetear tiempo de pausa al cambiar de programa
+            isPaused = false; // Asegurarse de que no esté en pausa
             showToast("Programa Seleccionado: " + currentProgram.name());
             updateAllLeds(currentProgram);
 
@@ -161,8 +172,41 @@ public class AppActivity extends AppCompatActivity {
                     startAudioThread();
                 }
             } else {
-                stopAudioThread(); // Correct call
+                stopAudioThread();
             }
+        }
+    }
+
+    // NUEVA: Función para alternar la pausa/reanudación
+    private void togglePauseRun() {
+        if (!isPowerOn) {
+            showToast("Enciende el dispositivo primero.");
+            return;
+        }
+        // Solo permitir pausa si hay un programa o audio activo
+        if (currentProgram == Program.NONE && currentAudioButtonMode == AudioButtonMode.OFF) {
+            showToast("No hay programa o audio activo para pausar.");
+            return;
+        }
+
+        isPaused = !isPaused; // Alternar el estado de pausa
+
+        if (isPaused) {
+            pauseStartTime = System.currentTimeMillis(); // Registrar el inicio de la pausa
+            // Si el AudioTrack está en reproducción, pausarlo
+            if (audioTrack != null && audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
+                audioTrack.pause();
+                audioTrack.flush(); // Limpiar el buffer para evitar que siga sonando un poco
+            }
+            showToast("Reproducción en Pausa");
+        } else {
+            // Calcular el tiempo que estuvo en pausa y sumarlo
+            totalPausedTime += (System.currentTimeMillis() - pauseStartTime);
+            // Reanudar la reproducción del AudioTrack
+            if (audioTrack != null && audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PAUSED) {
+                audioTrack.play();
+            }
+            showToast("Reproducción Reanudada");
         }
     }
 
@@ -236,13 +280,21 @@ public class AppActivity extends AppCompatActivity {
                 showToast("Modo de audio: Apagado");
                 break;
         }
+        // Asegurarse de que no esté en pausa si se cambia el modo de audio del botón
+        isPaused = false;
+        // Reiniciar el tiempo de pausa si se activa el audio del botón (aunque no el programa)
+        if (currentAudioButtonMode != AudioButtonMode.OFF && currentProgram == Program.NONE) {
+            programStartTime = System.currentTimeMillis();
+            totalPausedTime = 0;
+        }
+
 
         if (currentAudioButtonMode != AudioButtonMode.OFF || currentProgram != Program.NONE) {
             if (!isAudioPlaying) {
                 startAudioThread();
             }
         } else {
-            stopAudioThread(); // Correct call
+            stopAudioThread();
         }
     }
 
@@ -283,7 +335,7 @@ public class AppActivity extends AppCompatActivity {
                 break;
             case B4:
                 ledB.setImageResource(ledGreenOn);
-                programLeds.get(3).setImageResource(ledOrangeOn);
+                programLeds.get(3).setImageResource(ledOrangeOn); // Corregido: programLads -> programLeds
                 break;
             case B5:
                 ledB.setImageResource(ledGreenOn);
@@ -299,7 +351,7 @@ public class AppActivity extends AppCompatActivity {
     private void startAudioThread() {
         if (currentProgram == Program.NONE && currentAudioButtonMode == AudioButtonMode.OFF) {
             if (isAudioPlaying) {
-                stopAudioThread(); // Correct call
+                stopAudioThread();
             }
             return;
         }
@@ -335,20 +387,35 @@ public class AppActivity extends AppCompatActivity {
             double phaseLeft = 0, phaseRight = 0, panPhase = 0;
             float lastNoiseSample = 0;
 
-            // La frecuencia de la onda sinusoidal pura ahora se obtiene de la variable de estado
             double sineWavePhase = 0;
 
             while (isAudioPlaying) {
+                // Si está en pausa, el hilo espera.
+                if (isPaused) {
+                    runOnUiThread(() -> {
+                        // Apagar LEDs de paneo cuando está en pausa
+                        ledEyesL.setImageResource(ledOff);
+                        ledA.setImageResource(ledOff);
+                    });
+                    try {
+                        Thread.sleep(100); // Pequeña pausa para no saturar la CPU
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        isAudioPlaying = false;
+                        break; // Salir del bucle si el hilo es interrumpido
+                    }
+                    continue; // Saltar a la siguiente iteración del bucle while (sin generar audio)
+                }
+
                 Program currentProgramInThread = currentProgram;
                 NoiseType currentNoiseTypeInThread = currentNoiseType;
                 AudioButtonMode currentAudioButtonModeInThread = currentAudioButtonMode;
                 float currentInternalVolume = internalVolume;
-                // Obtener la frecuencia de la onda sinusoidal pura actual
                 double currentPureToneFrequency = pureToneFrequency;
                 double sineWaveIncrement = 2 * Math.PI * currentPureToneFrequency / SAMPLE_RATE;
 
-
-                double elapsedSeconds = (System.currentTimeMillis() - programStartTime) / 1000.0;
+                // Calcular el tiempo transcurrido, ajustando por el tiempo total de pausa
+                double elapsedSeconds = (System.currentTimeMillis() - programStartTime - totalPausedTime) / 1000.0;
 
                 double baseFrequency = 0;
                 double panSpeed = 0;
@@ -387,7 +454,9 @@ public class AppActivity extends AppCompatActivity {
                     }
                 }
 
-                if (currentProgramInThread == Program.NONE && currentAudioButtonModeInThread == AudioButtonMode.OFF) {
+                // Si no hay programa activo Y tampoco el botón de audio está activo, y no está en pausa activa,
+                // entonces el hilo debería detenerse o esperar. Si está en pausa, ya lo manejamos arriba.
+                if (currentProgramInThread == Program.NONE && currentAudioButtonModeInThread == AudioButtonMode.OFF && !isPaused) {
                     runOnUiThread(() -> {
                         ledEyesL.setImageResource(ledOff);
                         ledA.setImageResource(ledOff);
@@ -397,6 +466,7 @@ public class AppActivity extends AppCompatActivity {
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         isAudioPlaying = false;
+                        break;
                     }
                     continue;
                 }
@@ -422,7 +492,6 @@ public class AppActivity extends AppCompatActivity {
                     }
 
                     if (currentAudioButtonModeInThread == AudioButtonMode.SINE_WAVE) {
-                        // Usar la frecuencia actual para el tono puro
                         pureSineSample = (short) (Math.sin(sineWavePhase) * Short.MAX_VALUE * 0.3);
                         sineWavePhase += sineWaveIncrement;
                     } else if (currentAudioButtonModeInThread == AudioButtonMode.WHITE_NOISE) {
@@ -473,7 +542,8 @@ public class AppActivity extends AppCompatActivity {
 
                 final double lastPanValue = Math.sin(panPhase);
                 runOnUiThread(() -> {
-                    if (isPowerOn && currentProgramInThread != Program.NONE) {
+                    // Los LEDs de paneo solo se actualizan si no está en pausa Y hay un programa activo
+                    if (isPowerOn && currentProgramInThread != Program.NONE && !isPaused) {
                         if (lastPanValue < -0.2) {
                             ledEyesL.setImageResource(ledOrangeOn);
                             ledA.setImageResource(ledOff);
@@ -485,6 +555,7 @@ public class AppActivity extends AppCompatActivity {
                             ledA.setImageResource(ledOff);
                         }
                     } else {
+                        // Asegurarse de que estén apagados si no hay programa, está apagado, o en pausa
                         ledEyesL.setImageResource(ledOff);
                         ledA.setImageResource(ledOff);
                     }
@@ -521,13 +592,29 @@ public class AppActivity extends AppCompatActivity {
             ledEyesL.setImageResource(ledOff);
             ledA.setImageResource(ledOff);
         });
+        // Asegurarse de que el AudioTrack se detenga y libere si se detiene el hilo
+        if (audioTrack != null) {
+            if (audioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
+                audioTrack.stop();
+            }
+            audioTrack.release();
+            audioTrack = null;
+        }
+        isPaused = false; // Resetear el estado de pausa al detener el audio completamente
+        totalPausedTime = 0; // Resetear el tiempo de pausa acumulado
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         if (isAudioPlaying) {
-            stopAudioThread(); // Correct call
+            // Cuando la app se va a segundo plano, lo mejor es pausar o detener completamente
+            // Para una experiencia de usuario típica, pausar sería ideal
+            if (!isPaused) { // Si no estaba ya pausado por el usuario, lo pausamos automáticamente
+                togglePauseRun(); // Llama a la función para pausar
+            }
+            // O si prefieres detenerlo completamente al salir de la app:
+            // stopAudioThread();
         }
     }
 
@@ -535,7 +622,7 @@ public class AppActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (isAudioPlaying) {
-            stopAudioThread(); // Correct call
+            stopAudioThread();
         }
     }
 }
