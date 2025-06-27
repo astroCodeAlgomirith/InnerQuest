@@ -33,6 +33,12 @@ public class AppActivity extends AppCompatActivity {
     private float internalVolume = 0.5f; // Inicializa a un volumen medio (50%)
     private final float VOLUME_STEP = 0.1f; // Paso para aumentar/disminuir el volumen
 
+    // Nuevas variables para controlar la frecuencia del tono puro
+    private double pureToneFrequency = 440.0; // Frecuencia inicial (ej. La 440Hz)
+    private final double PITCH_STEP = 10.0; // Paso para aumentar/disminuir la frecuencia
+    private final double MIN_TONE_FREQ = 50.0; // Frecuencia mínima
+    private final double MAX_TONE_FREQ = 1000.0; // Frecuencia máxima
+
     // Variables para la generacion de audio
     private volatile boolean isAudioPlaying = false; // Control general del hilo de audio
     private AudioTrack audioTrack;
@@ -75,12 +81,13 @@ public class AppActivity extends AppCompatActivity {
         ledB = findViewById(R.id.led_b); // Led progama B
         ledA = findViewById(R.id.led_a); //Led ojo derecho
 
-        // Modificar los listeners para los botones de volumen
         findViewById(R.id.btn_vol_up).setOnClickListener(v -> increaseVolume());
         findViewById(R.id.btn_vol_down).setOnClickListener(v -> decreaseVolume());
 
-        findViewById(R.id.btn_pitch_up).setOnClickListener(v -> showToast("Pitch +"));
-        findViewById(R.id.btn_pitch_down).setOnClickListener(v -> showToast("Pitch -"));
+        // Modificar los listeners para los botones de pitch
+        findViewById(R.id.btn_pitch_up).setOnClickListener(v -> increasePitch());
+        findViewById(R.id.btn_pitch_down).setOnClickListener(v -> decreasePitch());
+
         findViewById(R.id.btn_pse_run).setOnClickListener(v -> showToast("PSE RUN click"));
 
         programLeds = new ArrayList<>();
@@ -106,7 +113,7 @@ public class AppActivity extends AppCompatActivity {
             startAudioThread();
             showToast("Dispositivo Encendido");
         } else {
-            stopAudioThread();
+            stopAudioThread(); // Correct call
             currentProgram = Program.NONE;
             currentAudioButtonMode = AudioButtonMode.OFF;
             showToast("Dispositivo Apagado");
@@ -154,7 +161,7 @@ public class AppActivity extends AppCompatActivity {
                     startAudioThread();
                 }
             } else {
-                stopAudioThread();
+                stopAudioThread(); // Correct call
             }
         }
     }
@@ -176,6 +183,33 @@ public class AppActivity extends AppCompatActivity {
         }
         internalVolume = Math.max(0.0f, internalVolume - VOLUME_STEP);
         showToast(String.format("Volumen: %.0f%%", internalVolume * 100));
+    }
+
+    // Nuevas funciones para controlar la frecuencia del tono puro
+    private void increasePitch() {
+        if (!isPowerOn) {
+            showToast("Enciende el dispositivo primero.");
+            return;
+        }
+        if (currentAudioButtonMode != AudioButtonMode.SINE_WAVE) {
+            showToast("Activa el modo Onda Sinusoidal primero.");
+            return;
+        }
+        pureToneFrequency = Math.min(MAX_TONE_FREQ, pureToneFrequency + PITCH_STEP);
+        showToast(String.format("Frecuencia Tono Puro: %.0f Hz", pureToneFrequency));
+    }
+
+    private void decreasePitch() {
+        if (!isPowerOn) {
+            showToast("Enciende el dispositivo primero.");
+            return;
+        }
+        if (currentAudioButtonMode != AudioButtonMode.SINE_WAVE) {
+            showToast("Activa el modo Onda Sinusoidal primero.");
+            return;
+        }
+        pureToneFrequency = Math.max(MIN_TONE_FREQ, pureToneFrequency - PITCH_STEP);
+        showToast(String.format("Frecuencia Tono Puro: %.0f Hz", pureToneFrequency));
     }
 
     private void showToast(String message) {
@@ -208,7 +242,7 @@ public class AppActivity extends AppCompatActivity {
                 startAudioThread();
             }
         } else {
-            stopAudioThread();
+            stopAudioThread(); // Correct call
         }
     }
 
@@ -265,7 +299,7 @@ public class AppActivity extends AppCompatActivity {
     private void startAudioThread() {
         if (currentProgram == Program.NONE && currentAudioButtonMode == AudioButtonMode.OFF) {
             if (isAudioPlaying) {
-                stopAudioThread();
+                stopAudioThread(); // Correct call
             }
             return;
         }
@@ -301,15 +335,18 @@ public class AppActivity extends AppCompatActivity {
             double phaseLeft = 0, phaseRight = 0, panPhase = 0;
             float lastNoiseSample = 0;
 
-            double sineWaveFrequency = 440.0;
+            // La frecuencia de la onda sinusoidal pura ahora se obtiene de la variable de estado
             double sineWavePhase = 0;
-            double sineWaveIncrement = 2 * Math.PI * sineWaveFrequency / SAMPLE_RATE;
 
             while (isAudioPlaying) {
                 Program currentProgramInThread = currentProgram;
                 NoiseType currentNoiseTypeInThread = currentNoiseType;
                 AudioButtonMode currentAudioButtonModeInThread = currentAudioButtonMode;
-                float currentInternalVolume = internalVolume; // Obtener el volumen interno actual
+                float currentInternalVolume = internalVolume;
+                // Obtener la frecuencia de la onda sinusoidal pura actual
+                double currentPureToneFrequency = pureToneFrequency;
+                double sineWaveIncrement = 2 * Math.PI * currentPureToneFrequency / SAMPLE_RATE;
+
 
                 double elapsedSeconds = (System.currentTimeMillis() - programStartTime) / 1000.0;
 
@@ -378,7 +415,6 @@ public class AppActivity extends AppCompatActivity {
                     short pureSineSample = 0;
 
                     if (currentProgramInThread != Program.NONE) {
-                        // Aplicar masterVolumeMultiplier del programa a los tonos binaurales
                         toneSampleLeft = (short) (Math.sin(phaseLeft) * Short.MAX_VALUE * 0.4 * masterVolumeMultiplier);
                         toneSampleRight = (short) (Math.sin(phaseRight) * Short.MAX_VALUE * 0.4 * masterVolumeMultiplier);
                         phaseLeft += phaseIncrementLeft;
@@ -386,15 +422,12 @@ public class AppActivity extends AppCompatActivity {
                     }
 
                     if (currentAudioButtonModeInThread == AudioButtonMode.SINE_WAVE) {
-                        // El tono puro se genera sin el masterVolumeMultiplier del programa,
-                        // pero sí se verá afectado por el internalVolume y el paneo.
+                        // Usar la frecuencia actual para el tono puro
                         pureSineSample = (short) (Math.sin(sineWavePhase) * Short.MAX_VALUE * 0.3);
                         sineWavePhase += sineWaveIncrement;
                     } else if (currentAudioButtonModeInThread == AudioButtonMode.WHITE_NOISE) {
                         switch (currentNoiseTypeInThread) {
                             case SOFT:
-                                // El ruido blanco se genera sin el masterVolumeMultiplier del programa,
-                                // pero sí se verá afectado por el internalVolume y el paneo.
                                 noiseSample = (short) ((random.nextDouble() * 2 - 1) * Short.MAX_VALUE * 0.3);
                                 break;
                             case SURF:
@@ -402,16 +435,12 @@ public class AppActivity extends AppCompatActivity {
                                 lastNoiseSample += randomStep;
                                 if (lastNoiseSample > 1.0f) lastNoiseSample = 1.0f;
                                 if (lastNoiseSample < -1.0f) lastNoiseSample = -1.0f;
-                                // El ruido surf se genera sin el masterVolumeMultiplier del programa,
-                                // pero sí se verá afectado por el internalVolume y el paneo.
                                 noiseSample = (short) (lastNoiseSample * Short.MAX_VALUE * 0.5);
                                 break;
                         }
                     }
 
-                    // --- Cálculo del Paneo (Izquierda/Derecha) ---
                     double panValue = 0;
-                    // El paneo solo ocurre si un programa está activo Y su panSpeed es > 0
                     if (currentProgramInThread != Program.NONE && panSpeed > 0) {
                         panValue = Math.sin(panPhase);
                         panPhase += panIncrement;
@@ -419,16 +448,12 @@ public class AppActivity extends AppCompatActivity {
                     double volumeLeft = 0.5 * (1 - panValue);
                     double volumeRight = 0.5 * (1 + panValue);
 
-                    // --- Mezcla y Aplicación del Paneo y el Volumen Interno ---
-                    // Todos los componentes de audio se suman
                     double mixedSampleLeftDouble = (double)toneSampleLeft + pureSineSample + noiseSample;
                     double mixedSampleRightDouble = (double)toneSampleRight + pureSineSample + noiseSample;
 
-                    // Aplicar el paneo A TODOS los componentes mezclados
                     mixedSampleLeftDouble *= volumeLeft;
                     mixedSampleRightDouble *= volumeRight;
 
-                    // Aplicar el volumen interno A TODOS los componentes después del paneo
                     mixedSampleLeftDouble *= currentInternalVolume;
                     mixedSampleRightDouble *= currentInternalVolume;
 
@@ -502,7 +527,7 @@ public class AppActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         if (isAudioPlaying) {
-            stopAudioThread();
+            stopAudioThread(); // Correct call
         }
     }
 
@@ -510,7 +535,7 @@ public class AppActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (isAudioPlaying) {
-            stopAudioThread();
+            stopAudioThread(); // Correct call
         }
     }
 }
