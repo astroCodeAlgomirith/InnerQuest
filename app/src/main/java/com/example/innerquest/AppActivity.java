@@ -249,7 +249,7 @@ public class AppActivity extends AppCompatActivity {
             return;
         }
         if (currentAudioButtonMode != AudioButtonMode.SINE_WAVE) {
-            showToast("Activa el modo Onda Sinusoidal primero.");
+            showToast("Activa el modo Tono primero.");
             return;
         }
         pureToneFrequency = Math.max(MIN_TONE_FREQ, pureToneFrequency - PITCH_STEP);
