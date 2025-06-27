@@ -18,14 +18,19 @@ public class AppActivity extends AppCompatActivity {
     private enum Program { NONE, B3, B4, B5 }
     private enum NoiseType { SOFT, SURF }
 
+    // Nuevo enum para el modo del botón WnTone
+    private enum AudioButtonMode { OFF, SINE_WAVE, WHITE_NOISE }
+
     //Variables de estado
     private boolean isPowerOn = false;
     private Program currentProgram = Program.NONE;
     private NoiseType currentNoiseType = NoiseType.SURF;
 
+    // Controla el modo del botón WnTone: apagado, tono sinusoidal, o ruido blanco
+    private AudioButtonMode currentAudioButtonMode = AudioButtonMode.OFF; // Cambiado de generateNoise
+
     // Variables para la generacion de audio
     private volatile boolean isAudioPlaying = false; // Control general del hilo de audio
-    private volatile boolean generateNoise = false; // Controla si se genera el ruido
     private AudioTrack audioTrack;
     private Thread audioThread;
     private final int SAMPLE_RATE = 44100; // Calidad de CD
@@ -84,7 +89,7 @@ public class AppActivity extends AppCompatActivity {
     private void setupClickListeners() {
         btnPwr.setOnClickListener(v -> togglePower());
         btnPgmSel.setOnClickListener(v -> selectNextProgram());
-        btnWnTone.setOnClickListener(v -> toggleNoiseGeneration());
+        btnWnTone.setOnClickListener(v -> toggleAudioButtonMode()); // Cambiado para llamar a la nueva función
         btnChangeNoise.setOnClickListener(v -> changeNoiseType());
     }
 
@@ -98,6 +103,7 @@ public class AppActivity extends AppCompatActivity {
         } else {
             stopAudioThread();
             currentProgram = Program.NONE; // Restablecer programa al apagar
+            currentAudioButtonMode = AudioButtonMode.OFF; // Resetear el modo del botón WnTone al apagar
             showToast("Dispositivo Apagado");
             // Apagar todos los LEDs al apagar el dispositivo
             ledEarsR.setImageResource(ledOff);
@@ -143,12 +149,12 @@ public class AppActivity extends AppCompatActivity {
 
             // Asegurarse de que el hilo de audio esté corriendo si hay un programa activo,
             // o detenerlo si se vuelve a NONE.
-            if (currentProgram != Program.NONE) {
+            if (currentProgram != Program.NONE || currentAudioButtonMode != AudioButtonMode.OFF) { // Revisa si hay programa O si el botón de audio está activo
                 if (!isAudioPlaying) { // Solo iniciar si no está ya corriendo
                     startAudioThread();
                 }
             } else {
-                stopAudioThread(); // Detener el audio si volvemos a NONE
+                stopAudioThread(); // Detener el audio si volvemos a NONE y el botón de audio está apagado
             }
         }
     }
@@ -157,13 +163,37 @@ public class AppActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
-    private void toggleNoiseGeneration() {
+    // Nueva función para alternar entre los modos del botón WnTone
+    private void toggleAudioButtonMode() {
         if (!isPowerOn) {
             showToast("Enciende el dispositivo primero.");
             return;
         }
-        generateNoise = !generateNoise;
-        showToast("Ruido " + (generateNoise ? "Activado" : "Desactivado"));
+
+        switch (currentAudioButtonMode) {
+            case OFF:
+                currentAudioButtonMode = AudioButtonMode.SINE_WAVE;
+                showToast("Modo de audio: Onda sinusoidal");
+                break;
+            case SINE_WAVE:
+                currentAudioButtonMode = AudioButtonMode.WHITE_NOISE;
+                showToast("Modo de audio: Ruido Blanco");
+                break;
+            case WHITE_NOISE:
+                currentAudioButtonMode = AudioButtonMode.OFF;
+                showToast("Modo de audio: Apagado");
+                break;
+        }
+
+        // Asegurarse de que el hilo de audio esté corriendo si un modo está activo
+        // o detenerlo si el programa está en NONE y el botón de audio también se apagó.
+        if (currentAudioButtonMode != AudioButtonMode.OFF || currentProgram != Program.NONE) {
+            if (!isAudioPlaying) {
+                startAudioThread();
+            }
+        } else {
+            stopAudioThread();
+        }
     }
 
     private void changeNoiseType() {
@@ -171,8 +201,9 @@ public class AppActivity extends AppCompatActivity {
             showToast("Enciende el dispositivo primero.");
             return;
         }
-        if (!generateNoise) {
-            showToast("Activa el ruido primero.");
+        // Este botón ahora solo afecta el tipo de ruido cuando estamos en modo Ruido Blanco
+        if (currentAudioButtonMode != AudioButtonMode.WHITE_NOISE) { // Cambiado: solo si estamos en modo ruido blanco
+            showToast("Activa el Ruido Blanco primero con el botón de Tono/Ruido."); // Mensaje adaptado
             return;
         }
         if (currentNoiseType == NoiseType.SOFT) {
@@ -223,6 +254,14 @@ public class AppActivity extends AppCompatActivity {
     }
 
     private void startAudioThread() {
+        // Añadida una comprobación para asegurar que el hilo solo se inicie si hay algo que reproducir
+        if (currentProgram == Program.NONE && currentAudioButtonMode == AudioButtonMode.OFF) {
+            if (isAudioPlaying) { // Si estaba reproduciendo algo que se detenga
+                stopAudioThread();
+            }
+            return;
+        }
+
         if (isAudioPlaying) return; // Si ya está reproduciendo, no hacer nada
 
         isAudioPlaying = true;
@@ -248,20 +287,23 @@ public class AppActivity extends AppCompatActivity {
             return;
         }
 
-        // Se inicializa programStartTime en togglePower() y selectNextProgram()
-        // No es necesario inicializarlo aquí si ya se maneja en los eventos de UI.
-
         audioThread = new Thread(() -> {
             short[] buffer = new short[bufferSize / 2]; // Dividir por 2 porque son pares de samples (L/R)
             Random random = new Random();
             double phaseLeft = 0, phaseRight = 0, panPhase = 0;
             float lastNoiseSample = 0; // Para el ruido tipo "surf"
 
+            // Parámetros para la onda sinusoidal pura (si se activa desde el botón)
+            double sineWaveFrequency = 440.0; // Ejemplo: Tono de La (A4)
+            double sineWavePhase = 0;
+            double sineWaveIncrement = 2 * Math.PI * sineWaveFrequency / SAMPLE_RATE;
+
+
             while (isAudioPlaying) {
                 // Capturar el estado actual del programa y ruido para este ciclo del bucle
                 Program currentProgramInThread = currentProgram;
                 NoiseType currentNoiseTypeInThread = currentNoiseType;
-                boolean generateNoiseInThread = generateNoise;
+                AudioButtonMode currentAudioButtonModeInThread = currentAudioButtonMode; // Capturar el nuevo estado
 
                 // Calcular el tiempo transcurrido desde que se inició/cambió el programa
                 double elapsedSeconds = (System.currentTimeMillis() - programStartTime) / 1000.0; // En segundos
@@ -271,69 +313,50 @@ public class AppActivity extends AppCompatActivity {
                 double masterVolumeMultiplier = 1.0; // Multiplicador para el volumen general (afecta tono y ruido)
 
                 // 1. OBTENER PARÁMETROS DEL PROGRAMA ACTUAL BASADOS EN EL TIEMPO
-                switch (currentProgramInThread) {
-                    case B3: // 46 minutos: Relajación Profunda y Alta Creatividad
-                        // Frecuencia: Ramp down de Alpha a Theta en los primeros 10 minutos (600 segundos)
-                        if (elapsedSeconds < 600) { // Primeros 10 minutos
-                            // Linealmente de 12 Hz (Alpha) a 5 Hz (Theta)
-                            baseFrequency = 12.0 - (7.0 / 600.0) * elapsedSeconds;
-                        } else { // Después de 10 minutos, mantener en Theta
-                            baseFrequency = 5.0;
-                        }
-                        panSpeed = 0.8; // Más activo para "patrones alternantes"
-
-                        // Amplitud: Atenúa gradualmente hasta el 60% en los primeros 5 minutos (300 segundos)
-                        if (elapsedSeconds < 300) {
-                            masterVolumeMultiplier = 1.0 - (0.4 / 300.0) * elapsedSeconds; // Baja de 1.0 a 0.6
-                        } else {
-                            masterVolumeMultiplier = 0.6; // Se mantiene en 60%
-                        }
-                        break;
-
-                    case B4: // 25 minutos: Puesta a Punto General
-                        baseFrequency = 10.0; // Constante en Alpha (ej. 10 Hz)
-                        panSpeed = 0.6; // Moderado para "múltiples patrones"
-                        masterVolumeMultiplier = 1.0; // Brillo constante
-                        break;
-
-                    case B5: // 45 minutos: Uso General
-                        // Frecuencia: Ramp down de Alpha a Theta sobre toda la duración (45 min = 2700 segundos)
-                        double maxDurationB5 = 45 * 60.0; // 45 minutos en segundos
-                        if (elapsedSeconds < maxDurationB5) {
-                            // Linealmente de 12 Hz (Alpha) a 6 Hz (Theta)
-                            baseFrequency = 12.0 - (6.0 / maxDurationB5) * elapsedSeconds;
-                        } else {
-                            baseFrequency = 6.0; // Si el programa dura más, se mantiene en 6 Hz
-                        }
-                        panSpeed = 0.7; // Un poco más activo que B4
-                        masterVolumeMultiplier = 1.0; // Brillo constante
-                        break;
-
-                    default: // NONE o dispositivo apagado
-                        baseFrequency = 0;
-                        panSpeed = 0;
-                        masterVolumeMultiplier = 0; // Apagar volumen
-                        if (currentProgramInThread == Program.NONE || !isPowerOn) {
-                            // Si estamos en NONE o apagado, no generamos audio y apagamos los LEDs de paneo.
-                            runOnUiThread(() -> {
-                                ledEyesL.setImageResource(ledOff);
-                                ledA.setImageResource(ledOff);
-                            });
-                            try {
-                                Thread.sleep(100); // Pequeña pausa para no saturar la CPU
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                // Exit the loop if thread is interrupted while waiting
-                                isAudioPlaying = false; // Set flag to false to terminate the loop cleanly
+                // Esto solo se aplica si un programa está seleccionado
+                if (currentProgramInThread != Program.NONE) {
+                    switch (currentProgramInThread) {
+                        case B3: // 46 minutos: Relajación Profunda y Alta Creatividad
+                            // Frecuencia: Ramp down de Alpha a Theta en los primeros 10 minutos (600 segundos)
+                            if (elapsedSeconds < 600) { // Primeros 10 minutos
+                                // Linealmente de 12 Hz (Alpha) a 5 Hz (Theta)
+                                baseFrequency = 12.0 - (7.0 / 600.0) * elapsedSeconds;
+                            } else { // Después de 10 minutos, mantener en Theta
+                                baseFrequency = 5.0;
                             }
-                            continue; // Saltar a la siguiente iteración del bucle while
-                        }
-                        break;
+                            panSpeed = 0.8; // Más activo para "patrones alternantes"
+
+                            // Amplitud: Atenúa gradualmente hasta el 60% en los primeros 5 minutos (300 segundos)
+                            if (elapsedSeconds < 300) {
+                                masterVolumeMultiplier = 1.0 - (0.4 / 300.0) * elapsedSeconds; // Baja de 1.0 a 0.6
+                            } else {
+                                masterVolumeMultiplier = 0.6; // Se mantiene en 60%
+                            }
+                            break;
+
+                        case B4: // 25 minutos: Puesta a Punto General
+                            baseFrequency = 10.0; // Constante en Alpha (ej. 10 Hz)
+                            panSpeed = 0.6; // Moderado para "múltiples patrones"
+                            masterVolumeMultiplier = 1.0; // Brillo constante
+                            break;
+
+                        case B5: // 45 minutos: Uso General
+                            // Frecuencia: Ramp down de Alpha a Theta sobre toda la duración (45 min = 2700 segundos)
+                            double maxDurationB5 = 45 * 60.0; // 45 minutos en segundos
+                            if (elapsedSeconds < maxDurationB5) {
+                                // Linealmente de 12 Hz (Alpha) a 6 Hz (Theta)
+                                baseFrequency = 12.0 - (6.0 / maxDurationB5) * elapsedSeconds;
+                            } else {
+                                baseFrequency = 6.0; // Si el programa dura más, se mantiene en 6 Hz
+                            }
+                            panSpeed = 0.7; // Un poco más activo que B4
+                            masterVolumeMultiplier = 1.0; // Brillo constante
+                            break;
+                    }
                 }
 
-                // Si baseFrequency es 0 (ej. en estado NONE o al final de un programa), no generar sonido
-                if (baseFrequency <= 0) {
-                    // Solo apagar si el programa está en NONE o se apagó
+                // Si no hay programa activo Y tampoco el botón de audio está activo, pausar o apagar
+                if (currentProgramInThread == Program.NONE && currentAudioButtonModeInThread == AudioButtonMode.OFF) {
                     runOnUiThread(() -> {
                         ledEyesL.setImageResource(ledOff);
                         ledA.setImageResource(ledOff);
@@ -342,10 +365,11 @@ public class AppActivity extends AppCompatActivity {
                         Thread.sleep(100); // Pequeña pausa para no saturar la CPU
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        isAudioPlaying = false;
+                        isAudioPlaying = false; // Set flag to false to terminate the loop cleanly
                     }
                     continue; // Saltar a la siguiente iteración del bucle while
                 }
+
 
                 double binauralBeat = 7.0; // Diferencia constante para el efecto binaural
                 double freqLeft = baseFrequency;
@@ -356,16 +380,24 @@ public class AppActivity extends AppCompatActivity {
 
                 // 2. GENERAR EL BUFFER DE AUDIO
                 for (int i = 0; i < buffer.length; i += 2) {
-                    // --- Generación de Tonos Binaurales ---
-                    // Aplicar masterVolumeMultiplier
-                    short toneSampleLeft = (short) (Math.sin(phaseLeft) * Short.MAX_VALUE * 0.4 * masterVolumeMultiplier);
-                    short toneSampleRight = (short) (Math.sin(phaseRight) * Short.MAX_VALUE * 0.4 * masterVolumeMultiplier);
-                    phaseLeft += phaseIncrementLeft;
-                    phaseRight += phaseIncrementRight;
-
-                    // --- Generación de Ruido (si está activado) ---
+                    short toneSampleLeft = 0;
+                    short toneSampleRight = 0;
                     short noiseSample = 0;
-                    if (generateNoiseInThread) {
+                    short pureSineSample = 0;
+
+                    // Generar tono binaural SOLO si hay un programa seleccionado
+                    if (currentProgramInThread != Program.NONE) {
+                        toneSampleLeft = (short) (Math.sin(phaseLeft) * Short.MAX_VALUE * 0.4 * masterVolumeMultiplier);
+                        toneSampleRight = (short) (Math.sin(phaseRight) * Short.MAX_VALUE * 0.4 * masterVolumeMultiplier);
+                        phaseLeft += phaseIncrementLeft;
+                        phaseRight += phaseIncrementRight;
+                    }
+
+                    // Generar onda sinusoidal pura O ruido blanco, según el modo del botón
+                    if (currentAudioButtonModeInThread == AudioButtonMode.SINE_WAVE) {
+                        pureSineSample = (short) (Math.sin(sineWavePhase) * Short.MAX_VALUE * 0.3); // Volumen un poco más bajo
+                        sineWavePhase += sineWaveIncrement;
+                    } else if (currentAudioButtonModeInThread == AudioButtonMode.WHITE_NOISE) {
                         switch (currentNoiseTypeInThread) {
                             case SOFT: // Ruido Blanco: Totalmente aleatorio
                                 noiseSample = (short) ((random.nextDouble() * 2 - 1) * Short.MAX_VALUE * 0.3 * masterVolumeMultiplier);
@@ -381,14 +413,19 @@ public class AppActivity extends AppCompatActivity {
                     }
 
                     // --- Cálculo del Paneo (Izquierda/Derecha) ---
-                    double panValue = Math.sin(panPhase); // Va de -1 (izq) a 1 (der)
+                    // Solo aplica paneo si hay un programa activo que lo defina
+                    double panValue = 0;
+                    if (currentProgramInThread != Program.NONE && panSpeed > 0) {
+                        panValue = Math.sin(panPhase); // Va de -1 (izq) a 1 (der)
+                        panPhase += panIncrement;
+                    }
                     double volumeLeft = 0.5 * (1 - panValue); // Si pan es -1, vol es 1. Si pan es 1, vol es 0.
                     double volumeRight = 0.5 * (1 + panValue); // Lo opuesto.
-                    panPhase += panIncrement;
 
                     // --- Mezcla y Aplicación del Paneo ---
-                    int mixedLeft = toneSampleLeft + noiseSample;
-                    int mixedRight = toneSampleRight + noiseSample;
+                    int mixedLeft = toneSampleLeft + pureSineSample + noiseSample; // Sumar todos los componentes de audio
+                    int mixedRight = toneSampleRight + pureSineSample + noiseSample;
+
                     short finalSampleLeft = (short) (mixedLeft * volumeLeft);
                     short finalSampleRight = (short) (mixedRight * volumeRight);
 
@@ -408,7 +445,7 @@ public class AppActivity extends AppCompatActivity {
                 // Actualizar LEDs de paneo en el UI thread
                 final double lastPanValue = Math.sin(panPhase); // Usar el valor actual de panPhase
                 runOnUiThread(() -> {
-                    // Solo actualiza los LEDs si el programa no es NONE y está encendido
+                    // Solo actualiza los LEDs si hay un programa activo y está encendido
                     if (isPowerOn && currentProgramInThread != Program.NONE) {
                         if (lastPanValue < -0.2) { // Umbral para la izquierda
                             ledEyesL.setImageResource(ledOrangeOn);
